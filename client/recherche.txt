@@ -1,0 +1,161 @@
+// server.js ou scrapingController.js
+import express from "express";
+import axios from "axios";
+import cheerio from "cheerio";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.post("/scrape", async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const { data: html } = await axios.get(url);
+    const $ = cheerio.load(html);
+
+    const title = $("title").length;
+    const metaDesc = $('meta[name="description"]').length;
+    const links = $("a").length;
+    const images = $("img").length;
+    const headings = $("h1, h2, h3, h4, h5, h6").length;
+    const scripts = $("script").length;
+
+    res.json({
+      labels: ["Title", "Meta", "Links", "Images", "Headings", "Scripts"],
+      data: [title, metaDesc, links, images, headings, scripts],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Scraping failed" });
+  }
+});
+
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+
+
+
+
+import { Chart, registerables } from "chart.js";
+import { useEffect, useRef, useState } from "react";
+
+Chart.register(...registerables);
+
+const TestScraping = () => {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+  const [inputUrl, setInputUrl] = useState("");
+  const [dataFromScrape, setDataFromScrape] = useState(null);
+
+  const createChart = (labels: string[], data: number[]) => {
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
+
+    const ctx = chartRef.current;
+
+    chartInstance.current = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Scraped Elements",
+            data,
+            backgroundColor: [
+              "rgba(255, 99, 132, 0.6)",
+              "rgba(54, 162, 235, 0.6)",
+              "rgba(255, 206, 86, 0.6)",
+              "rgba(75, 192, 192, 0.6)",
+              "rgba(153, 102, 255, 0.6)",
+              "rgba(255, 159, 64, 0.6)",
+            ],
+            borderColor: "rgba(0,0,0,0.1)",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+            },
+          },
+        },
+      },
+    });
+  };
+
+  const handleAnalyze = async () => {
+    if (!inputUrl) return;
+
+    try {
+      const response = await fetch("http://localhost:5000/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: inputUrl }),
+      });
+
+      const result = await response.json();
+      setDataFromScrape(result);
+      createChart(result.labels, result.data);
+    } catch (error) {
+      console.error("Scraping error:", error);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-1">Target Scraping</h2>
+        <p className="text-gray-400 mb-4">
+          What information do you want to retrieve?
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            className="flex-1 border border-gray-300 rounded-md p-2"
+            placeholder="Add a website URL"
+            value={inputUrl}
+            onChange={(e) => setInputUrl(e.target.value)}
+          />
+          <button
+            onClick={handleAnalyze}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 hover:cursor-pointer disabled:opacity-50"
+          >
+            Analyze
+          </button>
+        </div>
+      </div>
+
+      <hr />
+
+      {dataFromScrape && (
+        <div className="bg-slate-50 shadow-md rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">Results</h3>
+          <ul className="text-gray-600 list-disc pl-5">
+            {dataFromScrape.labels.map((label, index) => (
+              <li key={index}>
+                {label}: {dataFromScrape.data[index]}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="bg-white p-4 rounded shadow">
+        <canvas ref={chartRef}></canvas>
+      </div>
+    </div>
+  );
+};
+
+export default TestScraping;
