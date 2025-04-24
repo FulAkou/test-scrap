@@ -25,7 +25,9 @@ const TestScraping = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/products");
+        const res = await axios.get(
+          `${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/products}`
+        );
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {

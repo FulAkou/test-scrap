@@ -11,7 +11,7 @@ app.use(express.json());
 connectToDatabase();
 
 // Routes
-app.use("/api/products", productRoutes);
+app.use("/products", productRoutes);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 5000;
