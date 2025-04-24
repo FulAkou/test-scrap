@@ -25,7 +25,7 @@ const TestScraping = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("http://localhost:5000");
+        const res = await axios.get("http://localhost:5000/products");
         setProducts(res.data);
         setFilteredProducts(res.data);
       } catch (error) {
